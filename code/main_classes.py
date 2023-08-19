@@ -36,29 +36,40 @@ except Exception as e:
     import mysql.connector
 
 # connect to the host
-try:   
+try:
     mydb=mysql.connector.connect(host='localhost',
-                            user='root',
-                            password='not-shown',
-                            database = 'school')
+                                user='root',
+                                password='not-shown',
+                                database = 'school')
 
-except Exception as e: 
-    
+except Exception as e:
+
     # if failed to connect to the local host
-    try:  
-        with open('localhostdetails.txt','r') as f:
-            details = f.readline()
+    try:
+
+        # if we are not running it for the first time
+        with open('code/localhostdetails.txt','r') as f:
+            readed = f.readline()
+            details = readed.split(",")
             user, password= details[0], details[1]
             f.close()
-        
+            
         mydb=mysql.connector.connect(host='localhost',
                             user=user,
                             password=password,
                             database = 'school')
     
-    except FileNotFoundError: 
-        need.database()
+    except FileNotFoundError as e:
+            
+        try:
 
+            # if we are running it for the first time
+            need.database()
+            
+        except Exception as e:
+            print("\nDatabase could not be created.")
+            print(e)
+ 
 mycursor=mydb.cursor()
 
 # base class with all the required functions
