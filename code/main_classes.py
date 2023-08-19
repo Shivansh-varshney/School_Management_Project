@@ -8,7 +8,7 @@ from datetime import timedelta
 need = sc.need()
 qr = sc.QR()
 today = date.today()
-   
+
 # try importing the required modules
 try:
     from prettytable import PrettyTable
@@ -36,24 +36,24 @@ except Exception as e:
     import mysql.connector
 
 # connect to the host
-try:
+try:   
     mydb=mysql.connector.connect(host='localhost',
-                                user='root',
-                                password='not-shown',
-                                database = 'school')
+                            user='root',
+                            password='not-shown',
+                            database = 'school')
 
-except Exception as e:
-
-    # if failed to connect to the local host
+except Exception as e: 
+    
+     # if failed to connect to the local host
     try:
 
         # if we are not running it for the first time
-        with open('code/localhostdetails.txt','r') as f:
+        with open('localhostdetails.txt','r') as f:
             readed = f.readline()
-            details = readed.split(",")
+            details = readed.split(',')
             user, password= details[0], details[1]
             f.close()
-            
+        
         mydb=mysql.connector.connect(host='localhost',
                             user=user,
                             password=password,
@@ -69,8 +69,8 @@ except Exception as e:
         except Exception as e:
             print("\nDatabase could not be created.")
             print(e)
- 
-mycursor=mydb.cursor()
+
+mycursor = mydb.cursor()
 
 # base class with all the required functions
 class base():
@@ -105,7 +105,7 @@ class base():
                 print("ID-Num | Password")
                 print(f"{idn}  | {password}")
                 print("-------------------------------------------------------------------------")
-            return 1
+            return True
         
         except Exception as e:
             return e
@@ -139,7 +139,7 @@ class base():
                     row = [i[0],i[1],i[2],i[3],i[4],i[5]]
                     t.add_row(row)
                 print(t)
-                self.attendance(accnt,div,sec)
+                return self.attendance(accnt,div,sec)
             except Exception as e:
                 return e
         
@@ -158,9 +158,9 @@ class base():
                     t.add_row(row)
                 print(t)
                 if accnt == 'student':
-                    return 1
+                    return True
                 else:
-                    self.attendance(accnt,div,sec)
+                    return self.attendance(accnt,div,sec)
             except Exception as e:
                 return e
 
@@ -176,7 +176,7 @@ class base():
                     row = [i[0],i[1],i[2],i[3],i[4],i[5]]
                     t.add_row(row)
                 print(t)
-                self.attendance(accnt,div,sec)
+                return self.attendance(accnt,div,sec)
             except Exception as e:
                 return e
         
@@ -192,12 +192,12 @@ class base():
                     t.add_row(row)
     
                 print(t)
-                self.attendance(accnt,div,sec)
+                return self.attendance(accnt,div,sec)
             except Exception as e:
                 return e
 
         elif ch==5:
-            return 1
+            return True
         
         else:
             print("Wrong choice entered. Please try again...")
@@ -214,7 +214,7 @@ class base():
                 go_ahead = self.login(self.idn,self.nme)
                 return go_ahead
             else:
-                return 0
+                return False
         except Exception as e:
             print("The user could not be checked for past failed logins due to:",e)
 
@@ -251,7 +251,7 @@ class base():
                     query='select * from student where division="{}" and section = "{}"'.format(div,sec)
                     t=PrettyTable(['Name','Division','Section','Roll Number','Phone Number','Email'])
                 elif ch==5:
-                    return 1
+                    return True
                 else:
                     print("Wrong choice entered. Please try again...")
                     return self.display(accnt,div,sec)
@@ -261,7 +261,7 @@ class base():
             for i in record:
                 t.add_row(i)
             print(t)
-            self.display(accnt,div,sec)
+            return self.display(accnt,div,sec)
         
         except Exception as e:
             return e
@@ -278,7 +278,7 @@ class base():
                     nme1=ps[1]
                     password=input('Enter Password:')
                     if pswd==password and nme1==nme:
-                            return 1
+                            return True
                     
                     elif pswd!=password and nme1==nme:
                         print('Wrong password entered. Please try again')
@@ -290,7 +290,7 @@ class base():
                     query = "insert into failed_login values('{}','{}')".format(idn, today)
                     mycursor.execute(query)
                     mydb.commit()
-                    return 0
+                    return False
                 
                 else:
                     return -1
@@ -303,43 +303,54 @@ class base():
                 pswd=ps[0]
                 nme1=ps[1]
                 if pswd == password:
-                    return 1
+                    return True
                 else:
                     query = "insert into failed_login values('{}','{}')".format(idn, today)
                     mycursor.execute(query)
                     mydb.commit()
-                    return 0
+                    return False
 
     def mark_attendance(self):
         verify = self.login(self.idn, self.nme)
-        if verify == 1:
+        if verify == True:
+            
             flag = True
             while flag == True:
+                
                 value = qr.scanner()
                 if value == None:
+                    
                     verify = self.login(self.idn, self.nme)
-                    if verify == 1:
+                    if verify == True:
+                        
                         print("\nMarking for the absenties...")
                         fetch_from = ['student','teacher'] #list of tables to fetch data from
+                        
                         for i in fetch_from:
+                            
                             query = f"select name,division from {i};"
                             mycursor.execute(query)
                             details_list = mycursor.fetchall() # list of tuples having name and division in the format [('name','division'),('name','division'),...]
+                            
                             for details in details_list:
+                                
                                 query = f"select idn from login where name = '{details[0]}';"
                                 mycursor.execute(query)
                                 idn = mycursor.fetchone()
                                 query = f"insert into attendance values('{details[0]}','{idn[0]}','{details[1]}','No',{today});"
                                 mycursor.execute(query)
                                 mydb.commit()
+
                         print("\nAll the absenties have been marked.")
                         flag = False
-                        return 1
+                        return True
+                    
                     else:
                         query = "insert into failed_login values('{}','{}')".format(self.idn, today)
                         mycursor.execute(query)
                         mydb.commit()
-                        return 0
+                        return False
+                    
                 else:
                     values = value.split(',')
                     query = f"insert into attendance values('{values[0]}','{values[1]}','{values[2]}','{values[3]}','Yes','{today}');"
@@ -348,7 +359,7 @@ class base():
                     mydb.commit()
                     print("\nAttendance marked for",values[0])
                     
-        return 0
+        return False
     
     def new_credentials(self):
         dict_of_items = {"symbols" : '!@#$%^&+-*/=()}]{[:";<>.,~',
@@ -371,32 +382,43 @@ class base():
 
     def rem_from_table(self, idn, table):
         try:
+            
             if table != 'classroom':
+                
                 try:
+
+                    # extract name using idn 
                     query1 =f"select name from login where idn='{idn}';"
                     mycursor.execute(query1)
+                    
                     tuple_of_name = mycursor.fetchone()
                     name = tuple_of_name[0]
+                    
+                    # to form the name of qr-code file so that can be deleted
                     query3 = f"select name,division,section from {table} where name='{name}'"
                     mycursor.execute(query3)
+                    
+                    # delete qr-code from the database
                     record = mycursor.fetchone()
                     file_name = record[0]+'-'+record[1]+'-'+record[2]+'.png'
                     os.remove("C:\\Users\\hp\\OneDrive\\Desktop\\Python learning codes\\school management system\\Created QR-Codes\\"+file_name)
-                except Exception as e:
-                    print("Error occured while trying query1. Error is",e)
-                try:
+                    
+                    # finally delete particiapnt from tables.
                     query2="delete from {} where name='{}'".format(table, name)
                     query4="delete from login where idn='{}'".format(idn)
                     mycursor.execute(query4)
+                
                 except Exception as e:
-                    print("Error occured while trying query2 and query4. Error is",e)
+                    print(f"Error occured while trying to remove {table} & Error is:{e}")
                 
             else:
                 query2="delete from classroom where room_number='{}'".format(idn)
+            
             mycursor.execute(query2)
             mydb.commit()
             print(f'{table} removed successfully.')
-            return 1
+            return True
+        
         except Exception as e:
             return e
     
@@ -425,7 +447,7 @@ class base():
                 for i in data:
                     t.add_row(i)
                 print(t)
-                self.result(accnt,sec)
+                return self.result(accnt,sec)
             except Exception as e:
                 return e
             
@@ -443,9 +465,9 @@ class base():
                     t.add_row(i)
                 print(t)
                 if accnt == 'student':
-                    return 1
+                    return True
                 else:
-                    self.result(accnt,sec)
+                    return self.result(accnt,sec)
             except Exception as e:
                 return e
 
@@ -461,7 +483,7 @@ class base():
                 for i in data:
                     t.add_row(i)
                 print(t)
-                self.result(accnt,sec)
+                return self.result(accnt,sec)
             except Exception as e:
                 return e
         
@@ -499,12 +521,12 @@ class base():
                     mycursor.execute(query)
                     mydb.commit()
                 print('Result for ',name_of_test,' is done.')
-                self.result(accnt,sec)
+                return self.result(accnt,sec)
             except Exception as e:
                 return e
         
         elif ch==5:
-            return 1
+            return True
         
         else:
             print("Wrong choice entered. Please try again...")
@@ -514,12 +536,13 @@ class base():
         
         try:
 
+            # column1 is the column we are changing value in
+            # value[0] = new value
+            # column2 we use to identify correct row 
+            # value[1] = value we use to identify the row
             if table == 'classroom':
+
                 query="update classroom set {}='{}' where {}='{}'".format(column1, value[0], column2, value[1]) 
-                # column1 is the column we are changing value in
-                # value[0] = new value
-                # column2 we use to identify correct row 
-                # value[1] = value we use to identify the row
                 mycursor.execute(query)
                 mydb.commit()
             
@@ -565,7 +588,7 @@ class base():
                     mydb.commit()
 
             print(f'{column1} has been updated successfully.')
-            return 1
+            return True
         
         except Exception as e:
             return e
@@ -579,7 +602,7 @@ class admin(base):
     def start(self):
         
         verify = self.check()
-        if verify == 1:
+        if verify == True:
             return self.ask()
         else:
             return verify
@@ -610,12 +633,12 @@ class admin(base):
             email=input('Enter Email of teacher:')
             
             rv=self.add_to_table(table='teacher', values=[nme,div,sec,sal,phn,email])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==2:
 
@@ -627,22 +650,22 @@ class admin(base):
             new = input("Enter new value for the chosen column:")
             
             rv=self.update_in_table(table = "teacher", column1= column, column2='name', value=[new, nme, sec])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==3:
             idn=input('Enter idn of teacher:')
             rv=self.rem_from_table(idn, table = "teacher")
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==4:
             rno=int(input('Enter room number:'))#rno is for room number
@@ -651,12 +674,12 @@ class admin(base):
             sec = input('Enter section:')
             
             rv=self.add_to_table(table='classroom', values=[rno,div,tchr,sec])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==5:
             rno=input('Enter room number:')
@@ -665,45 +688,45 @@ class admin(base):
             new = input("Enter new value for the chosen column:")
             
             rv=self.update_in_table(table = "classroom", column1= column, column2='room_number', value=[new, rno])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...')
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==6:
             rno=input('Enter Room number:')
             rv=self.rem_from_table(idn = rno, table = 'classroom')
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...')
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
         
         elif ch==7:
             rv = self.mark_attendance()
-            if rv == 1:
-                self.ask()
+            if rv == True:
+                return self.ask()
             else:
-                return 0
+                return rv
 
         elif ch==8:
             rv=self.display(accnt,div='',sec='')
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                     
         elif ch==9:
-            return
+            return True
         
         else:
             print('Wrong choice entered:')
-            self.ask()
+            return self.ask()
 
 # class for teacher accounts
 class teacher(base):
@@ -714,7 +737,7 @@ class teacher(base):
     def start(self):
         
         verify = self.check()
-        if verify == 1:
+        if verify == True:
             return self.ask()
         else:
             return verify
@@ -749,12 +772,12 @@ class teacher(base):
             email=input('Enter email of student:')
             
             rv=self.add_to_table(table='student', values=[nme1,div,sec,rlln,PNo,email])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                 
         elif ch==2:
             rlln=int(input('Enter Roll number of Student:'))
@@ -763,57 +786,57 @@ class teacher(base):
             new = input("Enter new value for the chosen column:")
             
             rv=self.update_in_table(table = "student", column1= column, column2='roll_number', value=[new, rlln, sec])
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                 
         elif ch==3:
             idn = input("Enter idn of student:")
             rv=self.rem_from_table(idn,table = 'student')
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                 
         elif ch==4:
             rv=self.attendance(accnt,div,sec)
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                 
         elif ch==5:
             rv=self.result(accnt,sec)
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
 
         elif ch==6:
             
             rv=self.display(accnt,div,sec)
-            if rv==1:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
                 
         elif ch==7:
-            return 1
+            return True
 
         else:
             print('Wrong choice entered:')
-            self.ask()
+            return self.ask()
 
 # class for student accounts
 class student(base):
@@ -826,7 +849,7 @@ class student(base):
     def start(self):
         
         verify = self.check()
-        if verify == 1:
+        if verify == True:
             return self.ask()
         else:
             return verify
@@ -846,13 +869,13 @@ class student(base):
         if ch==1:
             
             rv=self.result(accnt,self.sec)
-            if rv==self.rlln:
-                self.ask()
+            if rv==True:
+                return self.ask()
             
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
         
         elif ch==2:
             query='select division from student where name="{}"'.format(self.nme)
@@ -860,24 +883,24 @@ class student(base):
             rec=mycursor.fetchone()
             div=rec[0]
             rv=self.attendance(accnt,div,self.sec)
-            if rv==self.rlln:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
         
         elif ch==3:
             rv=self.display(accnt,div='',sec=self.sec)
-            if rv==self.rlln:
-                self.ask()
+            if rv==True:
+                return self.ask()
             else:
                 print('Something went wrong...',rv)
                 print('Please Try Again')
-                self.ask()
+                return self.ask()
 
         elif ch==4:
-            return 1
+            return True
         
         else:
             print("Wrong choice entered. Please try again...")
