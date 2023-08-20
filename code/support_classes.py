@@ -69,6 +69,7 @@ class need():
     def database(self):
         
         try:
+            
             print('''We could not connect to the localhost.
 This is because you are running this file for the first time on this device.
 Please provide localhost user and password for that user.
@@ -161,7 +162,9 @@ we will re-create sample database for you on your localhost.\n''')
                 
             print("Sample database has been created successfully.")
             print("We are now closing program. Please start it again.")
-            
+            print("Please make sure that the below path is added into your path folder of environment variables before restarting\
+                  the application else we won't be able read the created the database.")
+            print("C:\Program Files\MySQL\MySQL Server 8.1\binC:\Program Files\MySQL\MySQL Server 8.1\bin")
             exit()
         
         except Exception as e:
