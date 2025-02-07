@@ -1,6 +1,8 @@
+import os
 import main_classes as all
    
 while True:
+        os.system("clear")
         print('*'*89)
         print('*\t\t\t\tSchool Management System\t\t\t\t*')
         print('*'*89)
@@ -66,6 +68,7 @@ while True:
                 print("Something went wrong here. Please contact Admin.")
 
         elif dsg=='E' or dsg=='e':
+            os.system("clear")
             break
 
         else:

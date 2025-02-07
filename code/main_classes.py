@@ -1,41 +1,17 @@
-# import important modules
 import os
 import random
-import support_classes as sc # sc is abreviation for support_classes
+import hashlib
+import pwinput
+import mysql.connector
 from datetime import date
+import support_classes
 from datetime import timedelta
+from prettytable import PrettyTable
 
-need = sc.need()
-qr = sc.QR()
+database = support_classes.database()
+qr = support_classes.QR()
 today = date.today()
 
-# try importing the required modules
-try:
-    from prettytable import PrettyTable
-    
-except Exception:
-    
-    print('''Required modules missing
-Now manually installing modules from pip.....''')
-    
-    print('Installing prettytable')
-    need.collect('prettytable')
-    
-    # importing module again after installing
-    from prettytable import PrettyTable
-
-try:
-    import mysql.connector
-
-except Exception as e:
-    
-    print("Installing mysql connector for python")
-
-    need.collect('mysql-connector-python')
-    # importing module again after installling
-    import mysql.connector
-
-# connect to the host
 try:   
     mydb=mysql.connector.connect(host='localhost',
                             user='root',
@@ -64,7 +40,7 @@ except Exception as e:
         try:
 
             # if we are running it for the first time
-            need.database()
+            database.create()
             
         except Exception as e:
             print("\nDatabase could not be created.")
@@ -117,12 +93,12 @@ class base():
         
         elif accnt=='teacher':
             print('''
-    What you want to do in Attendance list:
-    Enter 1 to display attendance of whole class for a particular date.
-    Enter 2 to display attendance of a particular student.
-    Enter 3 to display attendance of a particular student for a particular date.
-    Enter 4 to display full attendance of whole class.
-    Enter 5 to exit.''')
+        What you want to do in Attendance list:
+        Enter 1 to display attendance of whole class for a particular date.
+        Enter 2 to display attendance of a particular student.
+        Enter 3 to display attendance of a particular student for a particular date.
+        Enter 4 to display full attendance of whole class.
+        Enter 5 to exit.''')
             ch= int(input(':'))
         
         if ch==1:
@@ -228,12 +204,12 @@ class base():
                 t=PrettyTable(['Name','Division','Section','Roll Number','Phone Number','Email'])
             elif accnt=='admin':
                 print('''
-    What do you want to see?
-    Enter 1 to see all Teachers.
-    Enter 2 to see all clasrooms.
-    Enter 3 to see a particular student.
-    Enter 4 to see all students of a particular division and section.
-    Enter 5 to exit.''')
+        What do you want to see?
+        Enter 1 to see all Teachers.
+        Enter 2 to see all clasrooms.
+        Enter 3 to see a particular student.
+        Enter 4 to see all students of a particular division and section.
+        Enter 5 to exit.''')
                 ch=int(input(':'))
                 if ch==1:
                     query='select * from teacher'
@@ -243,12 +219,12 @@ class base():
                         t=PrettyTable(['Room Number','Division','Teacher','Section'])
                 elif ch==3:
                     div=input('Enter Id-Number of student:')
-                    query='select * from student where division="{}"'.format(div)
+                    query='select student.name,division,section,roll_number,phone_number,email from student,login where student.name=login.name and login.idn="{}"'.format(div)
                     t=PrettyTable(['Name','Division','Section','Roll Number','Phone Number','Email'])
-                elif ch==3:
+                elif ch==4:
                     div=input('Enter Division:')
                     sec=input('Enter section:')
-                    query='select * from student where division="{}" and section = "{}"'.format(div,sec)
+                    query='select * from student where division="{}" and section = "{}"'.format(div,sec.upper())
                     t=PrettyTable(['Name','Division','Section','Roll Number','Phone Number','Email'])
                 elif ch==5:
                     return True
@@ -276,8 +252,9 @@ class base():
                     ps=mycursor.fetchone()
                     pswd=ps[0]
                     nme1=ps[1]
-                    password=input('Enter Password:')
-                    if pswd==password and nme1==nme:
+                    password=pwinput.pwinput('Enter Password: ', mask="*")
+                    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+                    if pswd==hashed_password and nme1==nme:
                             return True
                     
                     elif pswd!=password and nme1==nme:
@@ -296,13 +273,14 @@ class base():
                     return -1
                 
             elif idn=='admin':
-                password=input('Enter Password(You will get only one chance):')
+                password=pwinput.pwinput('Enter Password: ', mask="*")
+                hashed_password = hashlib.sha256(password.encode()).hexdigest()
                 query='select password,name from login where idn="{}"'.format(idn)
                 mycursor.execute(query)
                 ps=mycursor.fetchone()
                 pswd=ps[0]
                 nme1=ps[1]
-                if pswd == password:
+                if pswd == hashed_password:
                     return True
                 else:
                     query = "insert into failed_login values('{}','{}')".format(idn, today)
@@ -422,19 +400,19 @@ class base():
         except Exception as e:
             return e
     
-    def result(self,accnt,sec):
+    def result(self,accnt,sec): 
 
         if accnt=='student':
             ch=2
         
         elif accnt=='teacher':
             print('''
-    What you want to do with Result:
-    Enter 1 to display result of whole class for a particular test.
-    Enter 2 to display result of a particular student.
-    Enter 3 to display result of a particular student for a particular test.
-    Enter 4 to enter marks for new test.
-    Enter 5 to exit.''')
+            What you want to do with Result:
+            Enter 1 to display result of whole class for a particular test.
+            Enter 2 to display result of a particular student.
+            Enter 3 to display result of a particular student for a particular test.
+            Enter 4 to enter marks for new test.
+            Enter 5 to exit.''')
             ch=int(input(':'))
         
         if ch==1:
@@ -476,7 +454,7 @@ class base():
                 tst=input('Enter Name of Test:')
                 rlln=int(input('Enter RollNo of student:'))
                 query='select * from result where \
-    roll_no={} and Name_of_test="{}"'.format(rlln,tst)
+            roll_no={} and Name_of_test="{}"'.format(rlln,tst)
                 mycursor.execute(query)
                 t=PrettyTable(['Name of Student','Division','Section','Roll No','Maths','English','Computer','Physics','Chemistry','Total','Grade','Name Of Test'])
                 data=mycursor.fetchall()
@@ -492,7 +470,7 @@ class base():
                 print('Enter Name of test:')
                 name_of_test=input(':')
                 query='select student.name,student.division,student.section,student.roll_number from \
-    student where student.section="{}"'.format(sec)
+            student where student.section="{}"'.format(sec)
                 mycursor.execute(query)
                 rec=mycursor.fetchall()
                 for i in range(1,len(rec)+1):
