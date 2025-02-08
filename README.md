@@ -1,4 +1,4 @@
-This is a prototype command line model for our software engineering project.
+### This is a prototype command line model for our software engineering project.
 
 ### Make sure you have the mysql local server before running the project
 ### Commands given here are for linux os but the procedure is same for other OS.
@@ -23,6 +23,15 @@ cd code
 python3 database.py
 ```
 ## run any one of the three files to interact with the system:
-> run admin.py: python3 admin (for school administration)
-> run teacher.py: python3 teacher.py (for teachers)
-> run student.py: python3 student.py (for students)
+> run admin.py: (for school administration)
+```
+python3 admin
+```
+> run teacher.py: (for teachers)
+```
+python3 teacher.py
+```
+> run student.py: (for students)
+```
+python3 student.py
+```
