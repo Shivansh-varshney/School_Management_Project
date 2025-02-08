@@ -8,8 +8,8 @@ This is a prototype command line model for our software engineering project.
   <li>Install dependencies: pip install -r req.txt</li>
   <li>go to code directory: cd code</li>
   <li>run database.py: python3 database.py (To create sample database)</li>
+  <li>run any one of the three files to interact with the system: e.g.</li>
   <ul>
-    <li>run any one of the three files to interact with the system.</li>
     <li>run admin.py: python3 admin (for school administration)</li>
     <li>run teacher.py: python3 teacher.py (for teachers)</li>
     <li>run student.py: python3 student.py (for students)</li>
