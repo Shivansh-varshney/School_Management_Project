@@ -67,9 +67,9 @@ we will re-create sample database for you on your localhost.\n''')
             user = input("Please enter user for localhost:")
             password = input("Please enter password for the user:")
             
-            line = user+','+password
-            with open("localhostdetails.txt",'w') as f:
-                f.write(str(line))
+            with open(".env",'w') as f:
+                f.write(f"MYSQL_USER = '{user}'\n")
+                f.write(f"MYSQL_PASSWORD = '{password}'")
                 f.close()
             
             mydb=mysql.connector.connect(host='localhost',

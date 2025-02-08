@@ -3,48 +3,30 @@ import random
 import hashlib
 import pwinput
 import mysql.connector
-from datetime import date
 import support_classes
+from datetime import date
+from decouple import config
 from datetime import timedelta
 from prettytable import PrettyTable
 
-database = support_classes.database()
-qr = support_classes.QR()
 today = date.today()
+qr = support_classes.QR()
+database = support_classes.database()
 
-try:   
+try: 
     mydb=mysql.connector.connect(host='localhost',
-                            user='root',
-                            password='not-shown',
+                            user=config("MYSQL_USER"),
+                            password=config("MYSQL_PASSWORD"),
                             database = 'school')
 
 except Exception as e: 
     
-     # if failed to connect to the local host
     try:
-
-        # if we are not running it for the first time
-        with open('localhostdetails.txt','r') as f:
-            readed = f.readline()
-            details = readed.split(',')
-            user, password= details[0], details[1]
-            f.close()
-        
-        mydb=mysql.connector.connect(host='localhost',
-                            user=user,
-                            password=password,
-                            database = 'school')
-    
-    except FileNotFoundError as e:
+        # if we are running it for the first time
+        database.create()
             
-        try:
-
-            # if we are running it for the first time
-            database.create()
-            
-        except Exception as e:
-            print("\nDatabase could not be created.")
-            print(e)
+    except Exception:
+        print("\nDatabase could not be created.")
 
 mycursor = mydb.cursor()
 

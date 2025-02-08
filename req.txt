@@ -3,5 +3,7 @@ numpy==2.2.2
 opencv-python==4.11.0.86
 pillow==11.1.0
 prettytable==3.13.0
+pwinput==1.0.3
+python-decouple==3.8
 qrcode==8.0
 wcwidth==0.2.13
