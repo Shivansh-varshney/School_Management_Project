@@ -25,7 +25,7 @@ python3 database.py
 ## run any one of the three files to interact with the system:
 > run admin.py: (for school administration)
 ```
-python3 admin
+python3 admin.py
 ```
 > run teacher.py: (for teachers)
 ```
