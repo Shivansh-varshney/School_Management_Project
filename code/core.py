@@ -2,31 +2,20 @@ import os
 import random
 import hashlib
 import pwinput
-import mysql.connector
-import support_classes
 from datetime import date
 from decouple import config
 from datetime import timedelta
+from qr_code import QR, qr_code_dir     # custom module
+import mysql.connector as connector
 from prettytable import PrettyTable
 
 today = date.today()
-qr = support_classes.QR()
-database = support_classes.database()
+qr = QR()
 
-try: 
-    mydb=mysql.connector.connect(host='localhost',
+mydb= connector.connect(host='localhost',
                             user=config("MYSQL_USER"),
                             password=config("MYSQL_PASSWORD"),
                             database = 'school')
-
-except Exception as e: 
-    
-    try:
-        # if we are running it for the first time
-        database.create()
-            
-    except Exception:
-        print("\nDatabase could not be created.")
 
 mycursor = mydb.cursor()
 
@@ -52,7 +41,7 @@ class base():
                 print(f'\n{table} added successfully.')
                 
                 idn, password = self.new_credentials()
-                query = "insert into login values('{}','{}','{}');".format(values[0], password, idn)
+                query = "insert into login values('{}','{}','{}');".format(values[0], hashlib.sha256(password.encode()).hexdigest(), idn)
                 mycursor.execute(query)
                 mydb.commit()
                 dct = {'made on':str(today)}
@@ -65,8 +54,8 @@ class base():
                 print("-------------------------------------------------------------------------")
             return True
         
-        except Exception as e:
-            return e
+        except Exception :
+            return
 
     def attendance(self,accnt,div,sec):
     
@@ -85,7 +74,7 @@ class base():
         
         if ch==1:
             try:
-                dte=input('Enter date:')
+                dte=input('Enter date(YYYY-MM-DD): ')
                 query='select attendance.name, attendance.idn, attendance.division, attendance.attended, attendance.section, \
                     attendance.date from attendance,student where student.name=attendance.name and attendance.division="{}" and attendance.section="{}" and date="{}"'.format(div,sec,dte)
                 mycursor.execute(query)
@@ -98,8 +87,8 @@ class base():
                     t.add_row(row)
                 print(t)
                 return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
         
         elif ch==2:
             try:
@@ -119,8 +108,8 @@ class base():
                     return True
                 else:
                     return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
 
         elif ch==3:
             try:
@@ -135,8 +124,8 @@ class base():
                     t.add_row(row)
                 print(t)
                 return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
         
         elif ch==4:
             try:
@@ -151,8 +140,8 @@ class base():
     
                 print(t)
                 return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
 
         elif ch==5:
             return True
@@ -173,8 +162,8 @@ class base():
                 return go_ahead
             else:
                 return False
-        except Exception as e:
-            print("The user could not be checked for past failed logins due to:",e)
+        except Exception :
+            print("The user could not be checked for past failed logins due to:")
 
     def display(self,accnt,div,sec):
         try:
@@ -201,7 +190,7 @@ class base():
                         t=PrettyTable(['Room Number','Division','Teacher','Section'])
                 elif ch==3:
                     div=input('Enter Id-Number of student:')
-                    query='select student.name,division,section,roll_number,phone_number,email from student,login where student.name=login.name and login.idn="{}"'.format(div)
+                    query='select student.name,division,section,roll_number,phone,email from student,login where student.name=login.name and login.idn="{}"'.format(div)
                     t=PrettyTable(['Name','Division','Section','Roll Number','Phone Number','Email'])
                 elif ch==4:
                     div=input('Enter Division:')
@@ -219,10 +208,14 @@ class base():
             for i in record:
                 t.add_row(i)
             print(t)
-            return self.display(accnt,div,sec)
+
+            if accnt == 'admin':
+                return self.display(accnt,div,sec)
+            
+            return True
         
-        except Exception as e:
-            return e
+        except Exception :
+            return
 
     def login(self, idn, nme, n=1):
         while True:
@@ -234,7 +227,7 @@ class base():
                     ps=mycursor.fetchone()
                     pswd=ps[0]
                     nme1=ps[1]
-                    password=pwinput.pwinput('Enter Password: ', mask="*")
+                    password= pwinput.pwinput('\nEnter Password: ', mask="*")
                     hashed_password = hashlib.sha256(password.encode()).hexdigest()
                     if pswd==hashed_password and nme1==nme:
                             return True
@@ -255,7 +248,7 @@ class base():
                     return -1
                 
             elif idn=='admin':
-                password=pwinput.pwinput('Enter Password: ', mask="*")
+                password=pwinput.pwinput('\nEnter Password: ', mask="*")
                 hashed_password = hashlib.sha256(password.encode()).hexdigest()
                 query='select password,name from login where idn="{}"'.format(idn)
                 mycursor.execute(query)
@@ -288,21 +281,23 @@ class base():
                         
                         for i in fetch_from:
                             
-                            query = f"select name,division from {i};"
+                            query = f"select name,division,section from {i};"
                             mycursor.execute(query)
-                            details_list = mycursor.fetchall() # list of tuples having name and division in the format [('name','division'),('name','division'),...]
+                            details_list = mycursor.fetchall() # list of tuples having name and division in the format [('name','division', 'section),('name','division', 'section'),...]
+                            query = f"select idn from attendance where attended='Yes' and date='{today}';"
+                            mycursor.execute(query)
+                            attendies = [idn[0] for idn in mycursor.fetchall()]
                             
                             for details in details_list:
-                                
                                 query = f"select idn from login where name = '{details[0]}';"
                                 mycursor.execute(query)
-                                idn = mycursor.fetchone()
-                                query = f"insert into attendance values('{details[0]}','{idn[0]}','{details[1]}','No',{today});"
-                                mycursor.execute(query)
-                                mydb.commit()
+                                idn = mycursor.fetchone()[0]
+                                if idn not in attendies:
+                                    query = f"insert into attendance values('{details[0]}','{idn}','{details[1]}', '{details[2]}','No', '{today}');"
+                                    mycursor.execute(query)
+                                    mydb.commit()
 
                         print("\nAll the absenties have been marked.")
-                        flag = False
                         return True
                     
                     else:
@@ -312,6 +307,7 @@ class base():
                         return False
                     
                 else:
+                    print(value)
                     values = value.split(',')
                     query = f"insert into attendance values('{values[0]}','{values[1]}','{values[2]}','{values[3]}','Yes','{today}');"
                     print(query)
@@ -368,7 +364,7 @@ class base():
                     query4="delete from login where idn='{}'".format(idn)
                     mycursor.execute(query4)
                 
-                except Exception as e:
+                except Exception :
                     print(f"Error occured while trying to remove {table} & Error is:{e}")
                 
             else:
@@ -379,8 +375,8 @@ class base():
             print(f'{table} removed successfully.')
             return True
         
-        except Exception as e:
-            return e
+        except Exception :
+            return
     
     def result(self,accnt,sec): 
 
@@ -408,8 +404,8 @@ class base():
                     t.add_row(i)
                 print(t)
                 return self.result(accnt,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
             
         elif ch==2:
             try:
@@ -428,13 +424,13 @@ class base():
                     return True
                 else:
                     return self.result(accnt,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
 
         elif ch==3:
             try:
-                tst=input('Enter Name of Test:')
-                rlln=int(input('Enter RollNo of student:'))
+                tst=input('Enter Name of Test: ')
+                rlln=int(input('Enter roll number of student: '))
                 query='select * from result where \
             roll_no={} and Name_of_test="{}"'.format(rlln,tst)
                 mycursor.execute(query)
@@ -444,8 +440,8 @@ class base():
                     t.add_row(i)
                 print(t)
                 return self.result(accnt,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
         
         elif ch==4:
             try:
@@ -457,33 +453,22 @@ class base():
                 rec=mycursor.fetchall()
                 for i in range(1,len(rec)+1):
                     nme1=rec[i-1][0]
-                    print(nme1)
-                    dvs=rec[i-1][1]
-                    print(dvs)
-                    sec=rec[i-1][2]
-                    print(sec)
                     rlln=rec[i-1][3]
-                    print(rlln)
-                    print('Enter Number for Maths for Roll number',i,':')
-                    mm=int(input(':')) #marks for maths
-                    print('Enter Number for Emglish for Roll number',i,':')
-                    me=int(input(':')) #marks for English
-                    print('Enter Number for Computer for Roll number',i,':')
-                    mc=int(input(':')) #marks for computer
-                    print('Enter Number for Physics for Roll number',i,':')
-                    mp=int(input(':')) #marks for physics
-                    print('Enter Number for Chemistry for Roll number',i,':')
-                    mch=int(input(':')) #marks for chemistry
+                    print(f"Name: {nme}, Roll Number: {rlln}")
+                    mm=int(input(f'Enter Number for Maths for roll number {i}: ')) #marks for maths
+                    me=int(input(f'Enter Number for Emglish for roll number {i}: ')) #marks for English
+                    mc=int(input(f'Enter Number for Computer for roll number {i}: ')) #marks for computer
+                    mp=int(input(f'Enter Number for Physics for roll number {i}: ')) #marks for physics
+                    mch=int(input(f'Enter Number for Chemistry for roll number {i}: ')) #marks for chemistry
+                    g=input(f'Enter Grades for roll number {i}: ') #grades
                     t=mm+me+mc+mp+mch
-                    print('Enter Grades for Roll number',i,':')
-                    g=input(':') #grades
                     query='insert into result values("{}","{}","{}",{},{},{},{},{},{},"{}","{}","{}");'.format(nme1,dvs,sec,rlln,mm,me,mc,mp,mch,t,g,name_of_test)
                     mycursor.execute(query)
                     mydb.commit()
                 print('Result for ',name_of_test,' is done.')
                 return self.result(accnt,sec)
-            except Exception as e:
-                return e
+            except Exception :
+                return
         
         elif ch==5:
             return True
@@ -491,67 +476,6 @@ class base():
         else:
             print("Wrong choice entered. Please try again...")
             return self.result(accnt,sec)
-
-    def update_in_table(self, table, column1, column2, value): # value is list of values
-        
-        try:
-
-            # column1 is the column we are changing value in
-            # value[0] = new value
-            # column2 we use to identify correct row 
-            # value[1] = value we use to identify the row
-            if table == 'classroom':
-
-                query="update classroom set {}='{}' where {}='{}'".format(column1, value[0], column2, value[1]) 
-                mycursor.execute(query)
-                mydb.commit()
-            
-            else:
-                
-                change = {'name':0,
-                          'division':1,
-                          'section':2}
-                
-                if column1 in change.keys():
-                    
-                    # deleting the old QR-Code in the database.
-                    query1=f"select name,division,section from {table} where {column2}='{value[1]}' and section='{value[2]}';"
-                    mycursor.execute(query1)
-                    record = mycursor.fetchone()
-                    file_name = record[0]+'-'+record[1]+'-'+record[2]+'.png'
-                    os.remove("C:\\Users\\hp\\OneDrive\\Desktop\\Python learning codes\\school management system\\Created QR-Codes\\"+file_name)
-                    
-                    # make new QR-Code as per the new data.
-                    dct = {'updated on':str(today)}
-                    query2=f"select idn from login,{table} where login.name={table}.name and {table}.section='{value[2]}'"
-                    mycursor.execute(query2)
-                    record = mycursor.fetchone()
-                    idn = record[0]
-                    changed = change[column1]
-                    if changed == 0:
-                        convert = value[0]+','+idn+','+record[1]+','+record[2]+','+str(dct)
-                    elif changed==1:
-                        convert = record[0]+','+idn+','+value[0]+','+record[2]+','+str(dct)
-                    elif changed==2:
-                        convert = record[0]+','+idn+','+record[1]+','+value[0]+','+str(dct)
-                    qr.maker(convert)
-                    
-                    # finally update the requested data in database
-                    query3="update {} set {}='{}' where {}='{}' and section='{}'".format(column1, value[0], column2, value[1], value[2]) 
-                    mycursor.execute(query3)
-                    mydb.commit()
-
-                else:
-
-                    query2="update {} set {}='{}' where {}='{}' and section='{}'".format(column1, value[0], column2, value[1], value[2]) 
-                    mycursor.execute(query2)
-                    mydb.commit()
-
-            print(f'{column1} has been updated successfully.')
-            return True
-        
-        except Exception as e:
-            return e
 
 # class for administration works
 class admin(base):
@@ -571,17 +495,17 @@ class admin(base):
         print('-'*90)
         accnt='admin'
         print('''
-    Welcome Admin,What would you like to do...
-    To Add a teacher please enter 1.
-    To Update about a teacher please enter 2.
-    To Remove a teacher enter 3.
-    To Add a Class enter 4.
-    To Update about a Class please enter 5.
-    To Remove a Class enter 6.
-    To start attendance for today enter 7.
-    Enter 8 to see saved information.
-    To exit enter 9.
-    ''')
+        Welcome Admin,What would you like to do...
+        To Add a teacher please enter 1.
+        To Remove a teacher enter 2.
+        To Add a student please enter 3.
+        To Remove a student enter 4.
+        To Add a Class enter 5.
+        To Remove a Class enter 6.
+        To start attendance for today enter 7.
+        Enter 8 to see saved information.
+        To exit enter 9.
+        ''')
         
         ch=int(input('Enter:'))
         if ch==1:
@@ -596,38 +520,48 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
                     
         elif ch==2:
-
-            print("Note: Changing Name of teacher is not acceptable.")
-            nme=input('Enter name  of teacher:')
-            sec=input("Enter section of teacher:")
-            print("| Division | Section | Salary | Phone Number | Email |")
-            column = input("Enter column you want to change:").lower()
-            new = input("Enter new value for the chosen column:")
-            
-            rv=self.update_in_table(table = "teacher", column1= column, column2='name', value=[new, nme, sec])
-            if rv==True:
-                return self.ask()
-            else:
-                print('Something went wrong...',rv)
-                print('Please Try Again')
-                return self.ask()
-                    
-        elif ch==3:
             idn=input('Enter idn of teacher:')
             rv=self.rem_from_table(idn, table = "teacher")
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
-                    
+
+        elif ch==3:
+            
+            nme1=input('Enter name of Student: ') #nme is for name
+            div=input('Enter division of Student: ') #nme is for name
+            sec=input('Enter section of Student: ') #nme is for name
+            rlln=input('Enter Roll Number: ') #rlln is for roll number 
+            PNo=input('Enter Phone Number: ') #PNo is for Phone Number
+            email=input('Enter email of student: ')
+            
+            rv=self.add_to_table(table='student', values=[nme1,div,sec,rlln,PNo,email])
+            if rv==True:
+                return self.ask()
+            else:
+                print('Something went wrong...')
+                print('Please Try Again')
+                return self.ask()
+
         elif ch==4:
+            idn = input("Enter idn of student:")
+            rv=self.rem_from_table(idn,table = 'student')
+            if rv==True:
+                return self.ask()
+            else:
+                print('Something went wrong...')
+                print('Please Try Again')
+                return self.ask()
+
+        elif ch==5:
             rno=int(input('Enter room number:'))#rno is for room number
             div=input('Enter division:')#div is for division
             tchr=input('Enter teacher:') #tchr is for teacher
@@ -637,24 +571,10 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
-                print('Please Try Again')
-                return self.ask()
-                    
-        elif ch==5:
-            rno=input('Enter room number:')
-            print("| room_number | Division | teacher | section |")
-            column = input("Enter column you want to change:").lower()
-            new = input("Enter new value for the chosen column:")
-            
-            rv=self.update_in_table(table = "classroom", column1= column, column2='room_number', value=[new, rno])
-            if rv==True:
-                return self.ask()
-            else:
                 print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
-                    
+                   
         elif ch==6:
             rno=input('Enter Room number:')
             rv=self.rem_from_table(idn = rno, table = 'classroom')
@@ -677,12 +597,14 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
                     
         elif ch==9:
-            return True
+            os.system("clear")
+            print("\nThanks for using our produt.\n")
+            exit()
         
         else:
             print('Wrong choice entered:')
@@ -713,86 +635,46 @@ class teacher(base):
         sec=record[1]
         print('Your class is',div,'-',sec,'What would you Like to do..')
         print('''
-    To Add a student please enter 1.
-    To Update about a student please enter 2.
-    To Remove a student enter 3.
-    For Attendance related work enter 4.
-    For Result related work enter 5.
-    To display all the students of class enter 6.
-    To exit enter 7.
-    ''')
-        ch=int(input('Enter:'))
+        For Attendance related work enter 1.
+        For Result related work enter 2.
+        To display all the students of class enter 3.
+        To exit enter 4.
+        ''')
+        ch=int(input('Enter: '))
         print('-'*90)
         
         if ch==1:
-            
-            nme1=input('Enter name of Student:') #nme is for name
-            rlln=input('Enter Roll Number:') #rlln is for roll number 
-            PNo=input('Enter Phone Number:')#PNo is for Phone Number
-            email=input('Enter email of student:')
-            
-            rv=self.add_to_table(table='student', values=[nme1,div,sec,rlln,PNo,email])
-            if rv==True:
-                return self.ask()
-            else:
-                print('Something went wrong...',rv)
-                print('Please Try Again')
-                return self.ask()
-                
-        elif ch==2:
-            rlln=int(input('Enter Roll number of Student:'))
-            print("| Name | Division | Section | Roll Number | Phone Number | Email |")
-            column = input("Enter column(as you see above) you want to change:").lower()
-            new = input("Enter new value for the chosen column:")
-            
-            rv=self.update_in_table(table = "student", column1= column, column2='roll_number', value=[new, rlln, sec])
-            if rv==True:
-                return self.ask()
-            else:
-                print('Something went wrong...',rv)
-                print('Please Try Again')
-                return self.ask()
-                
-        elif ch==3:
-            idn = input("Enter idn of student:")
-            rv=self.rem_from_table(idn,table = 'student')
-            if rv==True:
-                return self.ask()
-            else:
-                print('Something went wrong...',rv)
-                print('Please Try Again')
-                return self.ask()
-                
-        elif ch==4:
             rv=self.attendance(accnt,div,sec)
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
                 
-        elif ch==5:
+        elif ch==2:
             rv=self.result(accnt,sec)
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
 
-        elif ch==6:
+        elif ch==3:
             
             rv=self.display(accnt,div,sec)
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
                 
-        elif ch==7:
-            return True
+        elif ch==4:
+            os.system("clear")
+            print("\nThanks for using our product.\n")
+            exit()
 
         else:
             print('Wrong choice entered:')
@@ -818,12 +700,12 @@ class student(base):
         accnt='student'
         print('-'*90)
         print('''
-    What you want to do...
-    Enter 1 to see  result.
-    Enter 2 to see Attendance.
-    Enter 3 to see your information.
-    Enter 4 to exit.
-    ''')
+        What you want to do...
+        Enter 1 to see  result.
+        Enter 2 to see Attendance.
+        Enter 3 to see your information.
+        Enter 4 to exit.
+        ''')
         
         ch=int(input(':'))
         if ch==1:
@@ -833,7 +715,7 @@ class student(base):
                 return self.ask()
             
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
         
@@ -846,7 +728,7 @@ class student(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
         
@@ -855,12 +737,14 @@ class student(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
 
         elif ch==4:
-            return True
+            os.system("clear")
+            print("\nThanks for using our produt.\n")
+            exit()
         
         else:
             print("Wrong choice entered. Please try again...")
