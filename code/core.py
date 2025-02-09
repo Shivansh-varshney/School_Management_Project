@@ -184,7 +184,7 @@ class base():
                 ch=int(input(':'))
                 if ch==1:
                     query='select * from teacher'
-                    t=PrettyTable(['Name', 'Division','Section', 'Phone Number', 'Email', 'Salary'])
+                    t=PrettyTable(['Name', 'Division','Section', 'Salary', 'Phone Number', 'Email'])
                 elif ch==2:
                         query='select * from classroom'
                         t=PrettyTable(['Room Number','Division','Teacher','Section'])
@@ -357,14 +357,14 @@ class base():
                     # delete qr-code from the database
                     record = mycursor.fetchone()
                     file_name = record[0]+'-'+record[1]+'-'+record[2]+'.png'
-                    os.remove("C:\\Users\\hp\\OneDrive\\Desktop\\Python learning codes\\school management system\\Created QR-Codes\\"+file_name)
+                    os.remove(os.path.join(qr_code_dir, file_name))
                     
                     # finally delete particiapnt from tables.
                     query2="delete from {} where name='{}'".format(table, name)
                     query4="delete from login where idn='{}'".format(idn)
                     mycursor.execute(query4)
                 
-                except Exception :
+                except Exception as e:
                     print(f"Error occured while trying to remove {table} & Error is:{e}")
                 
             else:
@@ -375,8 +375,8 @@ class base():
             print(f'{table} removed successfully.')
             return True
         
-        except Exception :
-            return
+        except Exception as e:
+            return e
     
     def result(self,accnt,sec): 
 
@@ -527,12 +527,10 @@ class admin(base):
         elif ch==2:
             idn=input('Enter idn of teacher:')
             rv=self.rem_from_table(idn, table = "teacher")
-            if rv==True:
-                return self.ask()
-            else:
-                print('Something went wrong...')
+            if not rv:
+                print('Something went wrong...', rv)
                 print('Please Try Again')
-                return self.ask()
+            return self.ask()
 
         elif ch==3:
             
@@ -603,7 +601,6 @@ class admin(base):
                     
         elif ch==9:
             os.system("clear")
-            print("\nThanks for using our produt.\n")
             exit()
         
         else:
@@ -673,7 +670,6 @@ class teacher(base):
                 
         elif ch==4:
             os.system("clear")
-            print("\nThanks for using our product.\n")
             exit()
 
         else:
@@ -743,7 +739,6 @@ class student(base):
 
         elif ch==4:
             os.system("clear")
-            print("\nThanks for using our produt.\n")
             exit()
         
         else:
