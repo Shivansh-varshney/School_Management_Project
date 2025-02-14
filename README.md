@@ -8,7 +8,7 @@ virtualenv environment
 
 ## Activate the environment: 
 ```
-source environment/bin/activate (for linux)
+source environment/bin/activate
 ```
 
 ## Install dependencies: 
@@ -20,7 +20,7 @@ pip install -r req.txt
 ```
 cd code
 ```
-## run database.py when you run project locally for first time:
+## run database.py when you run project locally for first time (for sample database):
 ```
 python database.py
 ```

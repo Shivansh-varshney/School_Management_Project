@@ -74,8 +74,8 @@ class base():
                 print("-------------------------------------------------------------------------")
             return True
         
-        except Exception as e:
-            return e
+        except Exception:
+            return
 
     def attendance(self,accnt, div='', sec=''):
     
@@ -118,8 +118,8 @@ class base():
 
                 print(t)
                 return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception:
+                return
         
         elif ch==2:
             try:
@@ -154,8 +154,8 @@ class base():
                     t.add_row(i)
                 print(t)
                 return self.attendance(accnt,div,sec)
-            except Exception as e:
-                return e
+            except Exception:
+                return
         
         elif ch==4:
             try:
@@ -205,7 +205,7 @@ class base():
                 return go_ahead
             else:
                 return False
-        except Exception as e:
+        except Exception:
             print("The user could not be checked for past failed logins due to: ", e)
 
     def display(self,accnt,div='',sec=''):
@@ -277,8 +277,8 @@ class base():
             
             return True
         
-        except Exception as e:
-            return e
+        except Exception:
+            return
 
     def login(self, n=1):
         while True:
@@ -406,7 +406,7 @@ class base():
                     delete from user where email='{context['email']}';
                     """
                                                         
-                except Exception as e:
+                except Exception:
                     print(f"Error occured while trying to remove {context['table']} & Error is:{e}")
                 
             else:
@@ -419,8 +419,8 @@ class base():
             print(f'{context['table']} removed successfully.')
             return True
         
-        except Exception as e:
-            return e
+        except Exception:
+            return
     
     def result(self,accnt, div='', sec=''): 
 
@@ -540,8 +540,8 @@ class base():
                     mydb.commit()
                 print('Result for ',name_of_test,' is done.')
                 return self.result(accnt)
-            except Exception as e:
-                return e
+            except Exception:
+                return
         
         elif ch==5:
             return True
@@ -549,6 +549,41 @@ class base():
         else:
             print("Wrong choice entered. Please try again...")
             return self.result(accnt,sec)
+
+    def update_in_table(self, context):
+
+        try:
+            change_context = {
+                'salary': 'teacher',
+                'rollno' : 'student', 
+                'parent_phone' : 'student', 
+                'parent_email' : 'student',
+            }
+
+            if context['column'] in change_context.keys():
+                query = f"""
+                select id from user where {context['identify_column']}='{context['identify_value']}';
+                """
+                mycursor.execute(query)
+                user_id = mycursor.fetchone()[0]
+                context['identify_column'] = 'user_id' # change the column
+                context['identify_value'] = user_id # change the value
+                
+                context['table'] = change_context[context['column']] # change table to suitable table
+            
+            query = f"""
+            update {context['table']} set {context['column']}='{context['value']}' where {context['identify_column']}='{context['identify_value']}';
+            """
+            mycursor.execute(query)
+            mydb.commit()                
+
+            print(f"\n{context['table']} updated successfully!!")
+
+            return True
+
+        except Exception:
+            return
+            
 
 # class for administration works
 class admin(base):
@@ -570,14 +605,17 @@ class admin(base):
         ch = int(input('''
         Welcome Admin,What would you like to do...
         To Add a teacher please enter 1.
-        To Remove a teacher enter 2.
-        To Add a student please enter 3.
-        To Remove a student enter 4.
-        To Add a Class enter 5.
-        To Remove a Class enter 6.
-        To start attendance for today enter 7.
-        Enter 8 to see saved information.
-        To exit enter 9: '''))
+        To update a teacher enter 2.
+        To Remove a teacher enter 3.
+        To Add a student please enter 4.
+        To update a student enter 5.
+        To Remove a student enter 6.
+        To Add a Class enter 7.
+        To update a Class enter 8.
+        To Remove a Class enter 9.
+        To start attendance for today enter 10.
+        To see saved information enter 11.
+        To exit enter 12: '''))
         
         if ch==1:
             nme=input('Enter name of teacher: ') #nme is for name
@@ -601,11 +639,33 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
-                    
+
         elif ch==2:
+            email=input('Enter email of teacher: ')
+            print("Name | Division | Section | Phone | Email | Salary")
+            column = input("What would you like to change: ").lower()
+            value = input(f"Enter value for {column}: ")
+
+            context = {
+                'table': 'user',
+                'identify_column': 'email',
+                'identify_value': email,
+                'column': column,
+                'value': value
+            }
+
+            rv=self.update_in_table(context)
+            if rv==True:
+                return self.ask()
+            else:
+                print('Something went wrong...', )
+                print('Please Try Again')
+                return self.ask()
+
+        elif ch==3:
             email=input('Enter email of teacher: ')
 
             context = {
@@ -616,11 +676,11 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
 
-        elif ch==3:
+        elif ch==4:
             
             name=input('Enter name of Student: ') #nme is for name
             div=input('Enter division of Student: ') #nme is for name
@@ -647,11 +707,33 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
 
-        elif ch==4:
+        elif ch==5:
+            email=input('Enter email of student: ')
+            print("| Name | Division | Section | Roll Number | Phone | Email | Parent Phone | Parent Email |")
+            column = input("What would you like to change: ").lower()
+            value = input(f"Enter value for {column}: ")
+
+            context = {
+                'table': 'user',
+                'identify_column': 'email',
+                'identify_value': email,
+                'column': column,
+                'value': value
+            }
+
+            rv=self.update_in_table(context)
+            if rv==True:
+                return self.ask()
+            else:
+                print('Something went wrong...', )
+                print('Please Try Again')
+                return self.ask()
+
+        elif ch==6:
             email = input("Enter email of student: ")
             context = {
                 'table': 'student',
@@ -661,11 +743,11 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
 
-        elif ch==5:
+        elif ch==7:
             rno=int(input('Enter room number: '))
             div=input('Enter division: ')
             sec = input('Enter section: ')
@@ -686,8 +768,30 @@ class admin(base):
                 print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
-                   
-        elif ch==6:
+
+        elif ch==8:
+            room_number = int(input("Enter Room number you want to change: "))
+            print("Room Number | Division | Section | Teacher")
+            column = input("What would you like to change: ").lower()
+            value = input(f"Enter value for {column}: ")
+
+            context = {
+                'table': 'classroom',
+                'identify_column': 'room_number',
+                'identify_value': room_number,
+                'column': column,
+                'value': value
+            }
+
+            rv=self.update_in_table(context)
+            if rv==True:
+                return self.ask()
+            else:
+                print('Something went wrong...')
+                print('Please Try Again')
+                return self.ask()
+
+        elif ch==9:
             room=input('Enter Room number: ')
             context = {
                 'table': 'classroom',
@@ -697,27 +801,27 @@ class admin(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
         
-        elif ch==7:
+        elif ch==10:
             rv = self.mark_attendance()
             if rv == True:
                 return self.ask()
             else:
                 return rv
 
-        elif ch==8:
+        elif ch==11:
             rv=self.display(accnt)
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
                     
-        elif ch==9:
+        elif ch==12:
             os.system("clear")
             exit()
         
@@ -761,7 +865,7 @@ class teacher(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
                 
@@ -770,7 +874,7 @@ class teacher(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...',rv)
+                print('Something went wrong...')
                 print('Please Try Again')
                 return self.ask()
 
@@ -780,7 +884,7 @@ class teacher(base):
             if rv==True:
                 return self.ask()
             else:
-                print('Something went wrong...', rv)
+                print('Something went wrong...', )
                 print('Please Try Again')
                 return self.ask()
                 

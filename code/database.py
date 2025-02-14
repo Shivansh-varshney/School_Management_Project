@@ -61,6 +61,22 @@ class database():
             ''',
 
             '''
+            create table subject(
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE);
+            ''',
+            
+            '''
+            CREATE TABLE teacher_subject (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            teacher_id INT NOT NULL,
+            subject_id INT NOT NULL,
+            FOREIGN KEY (teacher_id) REFERENCES teacher(id) ON DELETE CASCADE,
+            FOREIGN KEY (subject_id) REFERENCES subject(id) ON DELETE CASCADE,
+            UNIQUE (teacher_id, subject_id));
+            ''',
+
+            '''
             CREATE TABLE classroom (
             id INT AUTO_INCREMENT PRIMARY KEY,
             room_number INT NOT NULL UNIQUE,
@@ -133,6 +149,10 @@ class database():
             # attendance for teacher
             "INSERT INTO attendance (user_id, attended, date) VALUES (@teacher_id, 'Yes', CURDATE());",
 
+            # subjects for teacher
+            "INSERT INTO subject (name) VALUES ('Social Science'), ('English');",
+            "INSERT INTO teacher_subject (teacher_id, subject_id) VALUES (1, 1), (1, 2);",
+
             # student user
             "INSERT INTO user (name, division, section, phone, email) VALUES ('Shubham', '12', 'A', '1123456789', 'shubham.student@school.com');",
 
@@ -165,7 +185,7 @@ class database():
             print(Fore.YELLOW+"C:\\Program Files\\MySQL\\MySQL Server 8.1\\binC:\\Program Files\\MySQL\\MySQL Server 8.1\\bin\n"+Style.RESET_ALL)
             exit()
         
-        except Exception as e:
+        except Exception:
             print(Fore.RED+str(e)+Style.RESET_ALL)
 
 if __name__ == "__main__":

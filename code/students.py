@@ -2,8 +2,8 @@ import os
 import pwinput
 from core import student
    
+os.system("clear")
 while True:
-        os.system("clear")
         print('*'*89)
         print('*\t\t\t\tSchool Management System\t\t\t\t*')
         print('*'*89)

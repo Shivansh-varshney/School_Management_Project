@@ -24,7 +24,7 @@ class QR():
         image.save(os.path.join(qr_code_dir, name))
         
     # scanner to scan qr code for admin work
-    def scanner(self,):
+    def scanner(self):
         print("Please wait while we open scanner to scan code.")
 
         cap = cv2.VideoCapture(0)
